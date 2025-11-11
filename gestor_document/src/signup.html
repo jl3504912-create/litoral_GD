@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5b5599',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Animación de fondo con gradiente */
+        body {
+            background: linear-gradient(-45deg, #5b5599, #7c6fb1, #9b8dc9, #6a5f9e);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+        }
+        
+        body.light {
+            background: linear-gradient(-45deg, #e3f2fd, #bbdefb, #90caf9, #64b5f6);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .logo-container {
+            animation: fadeInDown 0.8s ease-out;
+        }
+        
+        .logo-image {
+            transition: transform 0.3s ease;
+        }
+        
+        .logo-image:hover {
+            transform: scale(1.05);
+        }
+        
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .group:focus-within .group-focus-within\:text-primary {
+            color: #5b5599;
+        }
+        
+        @keyframes borderPulse {
+            0% { border-color: #5b5599; }
+            50% { border-color: rgba(91, 85, 153, 0.5); }
+            100% { border-color: #5b5599; }
+        }
+        
+        input:focus {
+            animation: borderPulse 2s infinite;
+            box-shadow: 0 0 0 2px rgba(91, 85, 153, 0.1);
+        }
+
+        .floating-label {
+            transition: all 0.2s ease-in-out;
+        }
+
+        input:focus + .floating-label,
+        input:not(:placeholder-shown) + .floating-label {
+            transform: translateY(-1.5rem) scale(0.85);
+            color: #5b5599;
+        }
+
+        .password-strength-meter {
+            height: 4px;
+            background-color: #ddd;
+            border-radius: 2px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        .strength-bar {
+            height: 100%;
+            width: 0;
+            transition: all 0.3s;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .shake {
+            animation: shake 0.5s;
+        }
+
+        /* Animación de documentos cayendo */
+        .falling-document {
+            position: fixed;
+            font-size: 2.5rem;
+            opacity: 0.2;
+            pointer-events: none;
+            z-index: 0;
+            animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            0% {
+                transform: translateY(-100px) rotate(0deg);
+                opacity: 0.2;
+            }
+            50% {
+                opacity: 0.3;
+            }
+            100% {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+    </style>
+    <script>
+        let currentStep = 1;
+        let terms = false;
+
+        function validateForm(event) {
+            event.preventDefault();
+            if (currentStep === 3 && validateStep3()) {
+                submitForm();
+                return false;
+            }
+            return false;
+        }
+
+        async function submitForm() {
+            const submitBtn = document.getElementById('submitBtn');
+            const originalText = submitBtn.innerHTML;
+            
+            // Deshabilitar botón y mostrar loading
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Registrando...';
+            
+            // Obtener datos del formulario
+            const formData = {
+                email: document.getElementById('email').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                firstName: document.getElementById('firstName').value.trim(),
+                lastName: document.getElementById('lastName').value.trim(),
+                password: document.getElementById('password').value,
+                confirmPassword: document.getElementById('confirmPassword').value,
+                institutionalId: document.getElementById('institutionalId').value.trim(),
+                terms: document.getElementById('terms').checked
+            };
+            
+            try {
+                const response = await fetch('../api/register.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Mostrar mensaje de éxito
+                    showNotification('Usuario registrado exitosamente. Redirigiendo...', 'success');
+                    
+                    // Redirigir al login después de 2 segundos
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 2000);
+                } else {
+                    // Mostrar error
+                    showNotification(result.message || 'Error al registrar usuario', 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error de conexión. Por favor, intenta nuevamente.', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        }
+
+        function showNotification(message, type) {
+            // Crear elemento de notificación
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+                type === 'success' 
+                    ? 'bg-green-500 text-white' 
+                    : 'bg-red-500 text-white'
+            }`;
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} mr-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Remover después de 5 segundos
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+
+        function validateStep1() {
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+            const firstName = document.getElementById('firstName').value;
+            const lastName = document.getElementById('lastName').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            // Validar email
+            if (!validateEmail(email)) {
+                showError('emailError');
+                return false;
+            }
+
+            // Validar teléfono
+            if (!validatePhone(phone)) {
+                showError('phoneError');
+                return false;
+            }
+
+            // Validar nombres y apellidos
+            if (firstName.length < 2 || lastName.length < 2) {
+                return false;
+            }
+
+            // Validar contraseña
+            if (!validatePasswordStrength(password)) {
+                return false;
+            }
+
+            // Validar coincidencia de contraseñas
+            if (password !== confirmPassword) {
+                document.getElementById('passwordMatch').classList.remove('hidden');
+                return false;
+            }
+
+            // Validar términos y condiciones (se validará en el paso 3)
+
+            return true;
+        }
+
+        function validateStep2() {
+            const institutionalId = document.getElementById('institutionalId').value;
+            const institutionalIdError = document.getElementById('institutionalIdError');
+
+            if (!/^[0-9]{10}$/.test(institutionalId)) {
+                institutionalIdError.classList.remove('hidden');
+                return false;
+            }
+            institutionalIdError.classList.add('hidden');
+
+            return true;
+        }
+
+        function validateStep3() {
+            return document.getElementById('terms').checked;
+        }
+
+        function updateSummary() {
+            document.getElementById('summaryName').textContent = 
+                document.getElementById('firstName').value + ' ' + document.getElementById('lastName').value;
+            document.getElementById('summaryEmail').textContent = document.getElementById('email').value;
+            document.getElementById('summaryPhone').textContent = document.getElementById('phone').value;
+            document.getElementById('summaryCodigo').textContent = document.getElementById('institutionalId').value;
+        }
+
+        function updateProgressBar(step) {
+            const circles = ['step1Circle', 'step2Circle', 'step3Circle'];
+            const lines = ['line1', 'line2'];
+
+            circles.forEach((circle, index) => {
+                const element = document.getElementById(circle);
+                if (index + 1 < step) {
+                    element.classList.remove('bg-gray-200', 'dark:bg-gray-700', 'text-gray-600', 'dark:text-gray-400');
+                    element.classList.add('bg-primary', 'text-white');
+                } else if (index + 1 === step) {
+                    element.classList.remove('bg-gray-200', 'dark:bg-gray-700', 'text-gray-600', 'dark:text-gray-400');
+                    element.classList.add('bg-primary', 'text-white');
+                }
+            });
+
+            lines.forEach((line, index) => {
+                const element = document.getElementById(line);
+                if (index + 1 < step) {
+                    element.classList.remove('bg-gray-200', 'dark:bg-gray-700');
+                    element.classList.add('bg-primary');
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('signupForm');
+            const nextBtn = document.getElementById('nextBtn');
+            const prevBtn = document.getElementById('prevBtn');
+            const submitBtn = document.getElementById('submitBtn');
+
+            nextBtn.addEventListener('click', () => {
+                let isValid = false;
+                
+                switch(currentStep) {
+                    case 1:
+                        isValid = validateStep1();
+                        break;
+                    case 2:
+                        isValid = validateStep2();
+                        break;
+                }
+
+                if (isValid) {
+                    document.getElementById(`step${currentStep}`).classList.add('hidden');
+                    currentStep++;
+                    document.getElementById(`step${currentStep}`).classList.remove('hidden');
+                    
+                    if (currentStep > 1) {
+                        prevBtn.classList.remove('hidden');
+                    }
+                    
+                    if (currentStep === 3) {
+                        nextBtn.classList.add('hidden');
+                        submitBtn.classList.remove('hidden');
+                        updateSummary();
+                    }
+
+                    updateProgressBar(currentStep);
+                }
+            });
+
+            prevBtn.addEventListener('click', () => {
+                document.getElementById(`step${currentStep}`).classList.add('hidden');
+                currentStep--;
+                document.getElementById(`step${currentStep}`).classList.remove('hidden');
+                
+                if (currentStep === 1) {
+                    prevBtn.classList.add('hidden');
+                }
+                
+                if (currentStep < 3) {
+                    nextBtn.classList.remove('hidden');
+                    submitBtn.classList.add('hidden');
+                }
+
+                updateProgressBar(currentStep);
+            });
+        });
+
+        function validateEmail(email) {
+            const emailRegex = /@litoral\.edu\.co$/;
+            const errorElement = document.getElementById('emailError');
+            const isValid = emailRegex.test(email);
+            errorElement.classList.toggle('hidden', isValid);
+            return isValid;
+        }
+
+        function validatePhone(phone) {
+            const phoneRegex = /^[0-9]{10}$/;
+            const errorElement = document.getElementById('phoneError');
+            const isValid = phoneRegex.test(phone);
+            errorElement.classList.toggle('hidden', isValid);
+            return isValid;
+        }
+
+        function showError(elementId) {
+            const element = document.getElementById(elementId);
+            element.classList.remove('hidden');
+            element.closest('div').querySelector('input').focus();
+        }
+
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const button = input.nextElementSibling;
+            const icon = button.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        function validatePasswordStrength(password) {
+            const lengthCheck = document.getElementById('lengthCheck');
+            const upperCheck = document.getElementById('upperCheck');
+            const numberCheck = document.getElementById('numberCheck');
+            const specialCheck = document.getElementById('specialCheck');
+            const strengthBar = document.getElementById('strengthBar');
+            const strengthText = document.getElementById('passwordStrength');
+
+            let strength = 0;
+            const checks = {
+                length: password.length >= 8,
+                upper: /[A-Z]/.test(password),
+                number: /[0-9]/.test(password),
+                special: /[!@#$%^&*]/.test(password)
+            };
+
+            // Actualizar iconos
+            lengthCheck.className = checks.length ? 'fas fa-check text-green-500' : 'fas fa-times text-red-500';
+            upperCheck.className = checks.upper ? 'fas fa-check text-green-500' : 'fas fa-times text-red-500';
+            numberCheck.className = checks.number ? 'fas fa-check text-green-500' : 'fas fa-times text-red-500';
+            specialCheck.className = checks.special ? 'fas fa-check text-green-500' : 'fas fa-times text-red-500';
+
+            // Calcular fuerza
+            strength = Object.values(checks).filter(Boolean).length;
+            
+            // Actualizar barra de progreso
+            const colors = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-green-500'];
+            strengthBar.className = 'strength-bar ' + (strength > 0 ? colors[strength - 1] : '');
+            strengthBar.style.width = (strength * 25) + '%';
+
+            // Actualizar texto
+            const texts = ['Débil', 'Regular', 'Buena', 'Fuerte'];
+            strengthText.textContent = password ? texts[strength - 1] : 'Fuerza de la contraseña';
+            
+            return Object.values(checks).every(Boolean);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Event listener para la contraseña
+            const passwordInput = document.getElementById('password');
+            const confirmInput = document.getElementById('confirmPassword');
+            const matchError = document.getElementById('passwordMatch');
+            
+            passwordInput.addEventListener('input', () => {
+                validatePasswordStrength(passwordInput.value);
+                if (confirmInput.value) {
+                    matchError.classList.toggle('hidden', passwordInput.value === confirmInput.value);
+                }
+            });
+
+            confirmInput.addEventListener('input', () => {
+                matchError.classList.toggle('hidden', passwordInput.value === confirmInput.value);
+            });
+
+            // Crear documentos cayendo
+            createFallingDocuments();
+        });
+
+        // Crear documentos cayendo
+        function createFallingDocuments() {
+            const container = document.body;
+            
+            setInterval(() => {
+                const doc = document.createElement('div');
+                doc.className = 'falling-document';
+                doc.textContent = '📄';
+                doc.style.left = Math.random() * 100 + '%';
+                doc.style.animationDuration = (Math.random() * 4 + 6) + 's';
+                doc.style.fontSize = (Math.random() * 1.5 + 2) + 'rem';
+                
+                container.appendChild(doc);
+                
+                setTimeout(() => {
+                    doc.remove();
+                }, 10000);
+            }, 1000);
+        }
+
+        // Dark mode is enabled by default. Toggle button removed per request.
+    </script>
+</head>
+<body class="transition-colors duration-200">
+    <div class="min-h-screen flex items-center justify-center relative" style="z-index: 10;">
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-2xl w-96 backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95" style="position: relative; z-index: 10;">
+            <div class="flex flex-col items-center mb-6">
+                <div class="w-48 h-48 mb-4 logo-container">
+                    <img src="assets/Logo_lito.png" alt="Logo Litoral" class="w-full h-full object-contain logo-image filter dark:brightness-110">
+                </div>
+                <h2 class="text-3xl font-bold text-primary text-center dark:text-white">Create Account</h2>
+            </div>
+            <div class="mb-6 flex justify-center space-x-4">
+                <div id="step1Circle" class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center">1</div>
+                <div id="line1" class="w-24 h-1 bg-gray-200 dark:bg-gray-700 self-center"></div>
+                <div id="step2Circle" class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 flex items-center justify-center">2</div>
+                <div id="line2" class="w-24 h-1 bg-gray-200 dark:bg-gray-700 self-center"></div>
+                <div id="step3Circle" class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 flex items-center justify-center">3</div>
+            </div>
+            <form id="signupForm" class="space-y-4" onsubmit="return validateForm(event)">
+                <!-- Step 1: Información Personal -->
+                <div id="step1" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email Institucional</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-2 text-gray-400">
+                            <i class="fas fa-envelope"></i>
+                        </span>
+                        <input type="email" 
+                               pattern=".+@litoral\.edu\.co$"
+                               title="Por favor ingrese un correo válido de @litoral.edu.co"
+                               placeholder="usuario@litoral.edu.co"
+                               class="mt-1 block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary bg-white dark:bg-gray-700 dark:text-white" 
+                               required
+                               id="email">
+                    </div>
+                    <p id="emailError" class="text-red-500 text-xs mt-1 hidden">Solo se permiten correos de @litoral.edu.co</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Número de Teléfono</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-2 text-gray-400">
+                            <i class="fas fa-phone"></i>
+                        </span>
+                        <input type="tel" 
+                               id="phone"
+                               pattern="[0-9]{10}"
+                               title="Por favor ingrese un número de teléfono válido de 10 dígitos"
+                               placeholder="3001234567"
+                               class="mt-1 block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary bg-white dark:bg-gray-700 dark:text-white" 
+                               required>
+                    </div>
+                    <p id="phoneError" class="text-red-500 text-xs mt-1 hidden">Ingrese un número de teléfono válido de 10 dígitos</p>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nombres</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2 text-gray-400 group-focus-within:text-primary transition-colors duration-200">
+                                <i class="fas fa-user"></i>
+                            </span>
+                            <input type="text" id="firstName" name="firstName" 
+                                class="mt-1 block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm 
+                                       focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary 
+                                       bg-white dark:bg-gray-700 dark:text-white
+                                       transition-all duration-200 ease-in-out
+                                       hover:border-primary" 
+                                required>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Apellidos</label>
+                        <div class="relative group">
+                            <span class="absolute left-3 top-2 text-gray-400 group-focus-within:text-primary transition-colors duration-200">
+                                <i class="fas fa-user"></i>
+                            </span>
+                            <input type="text" id="lastName" name="lastName" 
+                                class="mt-1 block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm 
+                                       focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary 
+                                       bg-white dark:bg-gray-700 dark:text-white
+                                       transition-all duration-200 ease-in-out
+                                       hover:border-primary" 
+                                required>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Contraseña</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-2 text-gray-400">
+                            <i class="fas fa-lock"></i>
+                        </span>
+                        <input type="password" 
+                               id="password"
+                               class="mt-1 block w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary bg-white dark:bg-gray-700 dark:text-white" 
+                               required>
+                        <button type="button" 
+                                onclick="togglePassword('password')"
+                                class="absolute right-3 top-2 text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="mt-2">
+                        <div class="password-strength-meter">
+                            <div id="strengthBar" class="strength-bar"></div>
+                        </div>
+                        <p id="passwordStrength" class="text-xs mt-1 text-gray-500 dark:text-gray-400">Fuerza de la contraseña</p>
+                        <div class="grid grid-cols-2 gap-2 mt-1">
+                            <div class="text-xs">
+                                <i id="lengthCheck" class="fas fa-times text-red-500"></i>
+                                <span class="ml-1 text-gray-500 dark:text-gray-400">Mínimo 8 caracteres</span>
+                            </div>
+                            <div class="text-xs">
+                                <i id="upperCheck" class="fas fa-times text-red-500"></i>
+                                <span class="ml-1 text-gray-500 dark:text-gray-400">Una mayúscula</span>
+                            </div>
+                            <div class="text-xs">
+                                <i id="numberCheck" class="fas fa-times text-red-500"></i>
+                                <span class="ml-1 text-gray-500 dark:text-gray-400">Un número</span>
+                            </div>
+                            <div class="text-xs">
+                                <i id="specialCheck" class="fas fa-times text-red-500"></i>
+                                <span class="ml-1 text-gray-500 dark:text-gray-400">Un carácter especial</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Confirmar Contraseña</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-2 text-gray-400">
+                            <i class="fas fa-lock"></i>
+                        </span>
+                        <input type="password" 
+                               id="confirmPassword"
+                               class="mt-1 block w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary bg-white dark:bg-gray-700 dark:text-white" 
+                               required>
+                        <button type="button" 
+                                onclick="togglePassword('confirmPassword')"
+                                class="absolute right-3 top-2 text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <p id="passwordMatch" class="text-red-500 text-xs mt-1 hidden">Las contraseñas no coinciden</p>
+                </div>
+                </div>
+
+                <!-- Step 2: Código Institucional -->
+                <div id="step2" class="space-y-4 hidden">
+                    <div class="text-center mb-6">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Información Institucional</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Ingresa tu código de estudiante o docente</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Código de Estudiante/Docente</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2 text-gray-400">
+                                <i class="fas fa-id-card"></i>
+                            </span>
+                            <input type="text" 
+                                   id="institutionalId" 
+                                   name="institutionalId"
+                                   pattern="[0-9]{10}"
+                                   title="El código debe tener 10 dígitos"
+                                   placeholder="Ejemplo: 2023123456"
+                                   class="mt-1 block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary bg-white dark:bg-gray-700 dark:text-white transition-all duration-200 ease-in-out hover:border-primary"
+                                   required>
+                        </div>
+                        <p id="institutionalIdError" class="text-red-500 text-xs mt-1 hidden">El código debe tener 10 dígitos</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Este código es el que utilizas para acceder a los servicios institucionales
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Step 3: Verificación -->
+                <div id="step3" class="space-y-4 hidden">
+                    <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Resumen de Registro</h3>
+                        <div class="space-y-2">
+                            <p class="text-sm text-gray-600 dark:text-gray-300">
+                                <span class="font-medium">Nombre:</span> 
+                                <span id="summaryName"></span>
+                            </p>
+                            <p class="text-sm text-gray-600 dark:text-gray-300">
+                                <span class="font-medium">Email:</span> 
+                                <span id="summaryEmail"></span>
+                            </p>
+                            <p class="text-sm text-gray-600 dark:text-gray-300">
+                                <span class="font-medium">Teléfono:</span> 
+                                <span id="summaryPhone"></span>
+                            </p>
+                            <p class="text-sm text-gray-600 dark:text-gray-300">
+                                <span class="font-medium">Código Institucional:</span> 
+                                <span id="summaryCodigo"></span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center mt-4">
+                        <input type="checkbox" id="terms" class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded" required 
+                               onchange="terms = this.checked">
+                        <label for="terms" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                            Acepto los <a href="#" class="text-primary hover:underline">términos y condiciones</a>
+                        </label>
+                    </div>
+                    <div id="errorMessage" class="hidden mt-4 p-3 bg-red-100 dark:bg-red-900 border border-red-400 text-red-700 dark:text-red-200 rounded"></div>
+                </div>
+
+                <div class="flex justify-between mt-6">
+                    <button type="button" id="prevBtn" 
+                            class="hidden px-6 py-2 border border-primary text-primary rounded-md hover:bg-primary hover:text-white transition duration-300">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        Anterior
+                    </button>
+                    <button type="button" id="nextBtn" 
+                            class="ml-auto px-6 py-2 bg-primary text-white rounded-md hover:bg-opacity-90 transition duration-300">
+                        Siguiente
+                        <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                    <button type="submit" id="submitBtn" 
+                            class="hidden px-6 py-2 bg-primary text-white rounded-md hover:bg-opacity-90 transition duration-300">
+                        Crear Cuenta
+                        <i class="fas fa-check ml-2"></i>
+                    </button>
+                </div>
+            </form>
+            <p class="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+                ¿Ya tienes una cuenta? 
+                <a href="login.html" class="text-primary hover:underline">Inicia sesión aquí</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

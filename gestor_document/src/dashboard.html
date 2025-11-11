@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Documentos - Litoral</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5b5599',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .logo-container {
+            animation: fadeInDown 0.8s ease-out;
+        }
+        
+        .logo-image {
+            transition: transform 0.3s ease;
+        }
+        
+        .logo-image:hover {
+            transform: scale(1.05);
+        }
+        
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .sidebar-transition {
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .document-card {
+            transition: all 0.3s ease;
+        }
+
+        .document-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .welcome-message {
+            animation: slideInRight 0.5s ease-out;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Scrollbar personalizado para el sidebar */
+        nav::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        nav::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        nav::-webkit-scrollbar-thumb {
+            background: rgba(91, 85, 153, 0.3);
+            border-radius: 3px;
+        }
+        
+        nav::-webkit-scrollbar-thumb:hover {
+            background: rgba(91, 85, 153, 0.5);
+        }
+
+        /* Animación de documentos cayendo */
+        .falling-documents {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .falling-doc {
+            position: absolute;
+            color: rgba(91, 85, 153, 0.08);
+            font-size: 2rem;
+            animation: fall linear infinite;
+            opacity: 0;
+        }
+        
+        .dark .falling-doc {
+            color: rgba(91, 85, 153, 0.15);
+        }
+
+        .falling-doc:nth-child(1) {
+            left: 10%;
+            animation-duration: 15s;
+            animation-delay: 0s;
+            font-size: 1.5rem;
+        }
+
+        .falling-doc:nth-child(2) {
+            left: 20%;
+            animation-duration: 18s;
+            animation-delay: 2s;
+            font-size: 2rem;
+        }
+
+        .falling-doc:nth-child(3) {
+            left: 35%;
+            animation-duration: 20s;
+            animation-delay: 4s;
+            font-size: 1.8rem;
+        }
+
+        .falling-doc:nth-child(4) {
+            left: 50%;
+            animation-duration: 16s;
+            animation-delay: 1s;
+            font-size: 2.2rem;
+        }
+
+        .falling-doc:nth-child(5) {
+            left: 65%;
+            animation-duration: 19s;
+            animation-delay: 3s;
+            font-size: 1.6rem;
+        }
+
+        .falling-doc:nth-child(6) {
+            left: 80%;
+            animation-duration: 17s;
+            animation-delay: 5s;
+            font-size: 2rem;
+        }
+
+        .falling-doc:nth-child(7) {
+            left: 15%;
+            animation-duration: 21s;
+            animation-delay: 6s;
+            font-size: 1.7rem;
+        }
+
+        .falling-doc:nth-child(8) {
+            left: 40%;
+            animation-duration: 14s;
+            animation-delay: 7s;
+            font-size: 2.1rem;
+        }
+
+        .falling-doc:nth-child(9) {
+            left: 70%;
+            animation-duration: 22s;
+            animation-delay: 8s;
+            font-size: 1.9rem;
+        }
+
+        .falling-doc:nth-child(10) {
+            left: 90%;
+            animation-duration: 18s;
+            animation-delay: 9s;
+            font-size: 1.8rem;
+        }
+
+        @keyframes fall {
+            0% {
+                top: -10%;
+                opacity: 0;
+                transform: translateX(0) rotate(0deg);
+            }
+            10% {
+                opacity: 0.08;
+            }
+            50% {
+                opacity: 0.12;
+            }
+            90% {
+                opacity: 0.08;
+            }
+            100% {
+                top: 110%;
+                opacity: 0;
+                transform: translateX(20px) rotate(15deg);
+            }
+        }
+
+        /* Mejorar contenedor principal */
+        .main-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Mejorar tarjetas de documentos */
+        .document-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .dark .document-card {
+            background: #1f2937;
+            border-color: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .document-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(91, 85, 153, 0.15);
+            border-color: rgba(91, 85, 153, 0.3);
+        }
+
+        .dark .document-card:hover {
+            box-shadow: 0 8px 24px rgba(91, 85, 153, 0.25);
+            border-color: rgba(91, 85, 153, 0.5);
+        }
+
+        /* Mejorar sección de controles */
+        .controls-section {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .dark .controls-section {
+            background: #1f2937;
+            border-color: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Animación de entrada para elementos */
+        .stagger-animation {
+            animation: staggerFadeIn 0.4s ease-out forwards;
+            opacity: 0;
+        }
+
+        @keyframes staggerFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Mejorar estado vacío */
+        .empty-state {
+            background: white;
+            border-radius: 16px;
+            padding: 4rem 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .dark .empty-state {
+            background: #1f2937;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+    <!-- Animación de documentos cayendo -->
+    <div class="falling-documents">
+        <div class="falling-doc"><i class="fas fa-file-pdf"></i></div>
+        <div class="falling-doc"><i class="fas fa-file-word"></i></div>
+        <div class="falling-doc"><i class="fas fa-file-excel"></i></div>
+        <div class="falling-doc"><i class="fas fa-file-image"></i></div>
+        <div class="falling-doc"><i class="fas fa-file-alt"></i></div>
+        <div class="falling-doc"><i class="fas fa-file-pdf"></i></div>
+        <div class="falling-doc"><i class="fas fa-file-word"></i></div>
+        <div class="falling-doc"><i class="fas fa-file-excel"></i></div>
+        <div class="falling-doc"><i class="fas fa-file-image"></i></div>
+        <div class="falling-doc"><i class="fas fa-file-alt"></i></div>
+    </div>
+    <!-- Sidebar -->
+    <div id="sidebar" class="fixed left-0 top-0 h-screen w-64 bg-white dark:bg-gray-800 shadow-xl z-30 sidebar-transition transform -translate-x-full lg:translate-x-0 border-r border-gray-200 dark:border-gray-700">
+        <div class="flex flex-col h-full">
+            <!-- Logo -->
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-primary to-purple-600">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div>
+                            <span class="text-2xl font-bold text-white block">Gestor</span>
+                            <span class="text-lg font-semibold text-white opacity-90">Documentos</span>
+                        </div>
+                    </div>
+                    <button id="closeSidebar" class="lg:hidden text-white hover:text-gray-200 transition-colors">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Menú de Navegación -->
+            <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+                <a href="#" onclick="showSection('documents'); return false;" 
+                   class="menu-item flex items-center space-x-4 p-4 rounded-xl text-white bg-primary shadow-lg transition-all duration-200 active transform hover:scale-105">
+                    <i class="fas fa-folder text-xl w-6 text-center"></i>
+                    <span class="font-semibold text-lg">Mis Documentos</span>
+                </a>
+                
+                <a href="#" onclick="showSection('shared'); return false;" 
+                   class="menu-item flex items-center space-x-4 p-4 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-primary hover:text-white transition-all duration-200 transform hover:scale-105">
+                    <i class="fas fa-share-alt text-xl w-6 text-center"></i>
+                    <span class="font-medium">Compartidos</span>
+                </a>
+                
+                <a href="#" onclick="showSection('trash'); return false;" 
+                   class="menu-item flex items-center space-x-4 p-4 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-primary hover:text-white transition-all duration-200 transform hover:scale-105">
+                    <i class="fas fa-trash text-xl w-6 text-center"></i>
+                    <span class="font-medium">Papelera</span>
+                </a>
+                
+                <div class="pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
+                    <a href="#" onclick="showSection('settings'); return false;" 
+                       class="menu-item flex items-center space-x-4 p-4 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-primary hover:text-white transition-all duration-200 transform hover:scale-105">
+                        <i class="fas fa-cog text-xl w-6 text-center"></i>
+                        <span class="font-medium">Configuración</span>
+                    </a>
+                </div>
+            </nav>
+
+            <!-- Usuario -->
+            <div class="p-4 border-t border-gray-200 dark:border-gray-700 mt-auto">
+                <div class="flex items-center space-x-3 p-4 rounded-lg bg-gradient-to-r from-primary to-purple-600 shadow-lg mb-3">
+                    <div class="w-14 h-14 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-white font-bold text-lg border-2 border-white border-opacity-30">
+                        <span id="userInitials">U</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-base font-semibold text-white truncate" id="userName">Usuario</p>
+                        <p class="text-xs text-white text-opacity-80 truncate" id="userEmail">usuario@litoral.edu.co</p>
+                    </div>
+                </div>
+                <button onclick="logout()" class="w-full p-3 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Cerrar Sesión</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlay para móvil -->
+    <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
+    <!-- Contenido Principal -->
+    <div class="lg:ml-64 min-h-screen main-content">
+        <!-- Header -->
+        <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20 border-b border-gray-200 dark:border-gray-700 backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between p-4 lg:p-6">
+                <!-- Sección izquierda: Menú y Bienvenida -->
+                <div class="flex items-center space-x-4 mb-4 lg:mb-0">
+                    <button id="menuToggle" class="lg:hidden text-gray-600 dark:text-gray-300 hover:text-primary focus:outline-none p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                        <i class="fas fa-bars text-2xl"></i>
+                    </button>
+                    <div class="flex items-center space-x-4">
+                        <!-- Logo GRANDE en header -->
+                        <div class="w-20 h-20 lg:w-24 lg:h-24 logo-container bg-primary rounded-xl p-3 shadow-lg hover:shadow-xl transition-all hover:scale-105">
+                            <img src="assets/Logo_lito.png" alt="Logo Litoral" class="w-full h-full object-contain logo-image">
+                        </div>
+                        <div class="welcome-message">
+                            <h1 class="text-2xl lg:text-3xl font-bold text-gray-800 dark:text-white" id="pageTitle">Mis Documentos</h1>
+                            <p class="text-sm lg:text-base text-gray-600 dark:text-gray-400 mt-1.5" id="welcomeMessage">
+                                <span class="font-semibold text-primary">¡Bienvenido, </span>
+                                <span id="welcomeUserName" class="font-bold text-primary text-lg">Usuario</span>
+                                <span class="font-semibold text-primary">!</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Sección derecha: Búsqueda y Acciones -->
+                <div class="flex items-center space-x-4">
+                    <!-- Buscar -->
+                    <div class="hidden md:block relative flex-1 lg:flex-none">
+                        <input type="text" 
+                               id="searchInput"
+                               placeholder="Buscar documentos..." 
+                               class="pl-11 pr-4 py-3 w-full lg:w-80 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all">
+                        <i class="fas fa-search absolute left-4 top-4 text-gray-400"></i>
+                    </div>
+                    <!-- Botón Subir -->
+                    <button onclick="showUploadModal()" class="bg-primary text-white px-5 py-3 rounded-lg hover:bg-opacity-90 transition duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-105">
+                        <i class="fas fa-upload text-lg"></i>
+                        <span class="hidden md:inline font-medium">Subir Documento</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Contenido -->
+        <main class="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
+            <!-- Sección: Mis Documentos -->
+            <div id="documentsSection" class="section-content fade-in">
+                <!-- Controles -->
+                <div class="controls-section">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <!-- Vista y Filtros -->
+                        <div class="flex items-center space-x-3 flex-wrap">
+                            <div class="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                                <button onclick="changeView('grid')" id="gridView" class="p-2.5 rounded-md bg-primary text-white shadow-sm transition-all duration-200 hover:shadow-md">
+                                    <i class="fas fa-th text-sm"></i>
+                                </button>
+                                <button onclick="changeView('list')" id="listView" class="p-2.5 rounded-md text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-600 transition-all duration-200">
+                                    <i class="fas fa-list text-sm"></i>
+                                </button>
+                            </div>
+                            <div class="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-filter text-gray-400 dark:text-gray-500"></i>
+                                <select id="sortSelect" onchange="sortDocuments()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary text-sm font-medium">
+                                    <option value="name">Ordenar por nombre</option>
+                                    <option value="date">Ordenar por fecha</option>
+                                    <option value="size">Ordenar por tamaño</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- Contador de documentos -->
+                        <div class="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                            <i class="fas fa-file-alt"></i>
+                            <span id="documentCount" class="font-medium">0 documentos</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de Documentos -->
+                <div id="documentsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                    <!-- Los documentos se cargarán aquí dinámicamente -->
+                </div>
+
+                <!-- Estado Vacío -->
+                <div id="emptyState" class="hidden empty-state text-center">
+                    <div class="mb-6">
+                        <i class="fas fa-folder-open text-7xl text-gray-300 dark:text-gray-600 mb-4"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">No hay documentos</h3>
+                    <p class="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">Comienza subiendo tu primer documento. Puedes arrastrar archivos o hacer clic en el botón de subir.</p>
+                    <button onclick="showUploadModal()" class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-opacity-90 transition duration-200 inline-flex items-center space-x-2 shadow-md hover:shadow-lg">
+                        <i class="fas fa-upload"></i>
+                        <span>Subir Documento</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sección: Compartidos -->
+            <div id="sharedSection" class="section-content hidden">
+                <div class="controls-section mb-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-1">Documentos Compartidos</h2>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Documentos que otros usuarios han compartido contigo</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="sharedDocuments" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                    <!-- Los documentos compartidos se cargarán aquí -->
+                </div>
+                <div id="emptySharedState" class="hidden empty-state text-center">
+                    <div class="mb-6">
+                        <i class="fas fa-share-alt text-7xl text-gray-300 dark:text-gray-600 mb-4"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">No hay documentos compartidos</h3>
+                    <p class="text-gray-500 dark:text-gray-400">Los documentos que otros usuarios compartan contigo aparecerán aquí</p>
+                </div>
+            </div>
+
+            <!-- Sección: Papelera -->
+            <div id="trashSection" class="section-content hidden">
+                <div class="controls-section mb-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-1">Papelera</h2>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Documentos eliminados recientemente</p>
+                        </div>
+                        <button onclick="emptyTrash()" class="px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-200 inline-flex items-center space-x-2 shadow-md hover:shadow-lg">
+                            <i class="fas fa-trash-alt"></i>
+                            <span>Vaciar Papelera</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="trashDocuments" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                    <!-- Los documentos eliminados se cargarán aquí -->
+                </div>
+                <div id="emptyTrashState" class="hidden empty-state text-center">
+                    <div class="mb-6">
+                        <i class="fas fa-trash text-7xl text-gray-300 dark:text-gray-600 mb-4"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">La papelera está vacía</h3>
+                    <p class="text-gray-500 dark:text-gray-400">Los documentos eliminados se moverán aquí antes de ser borrados permanentemente</p>
+                </div>
+            </div>
+
+            <!-- Sección: Configuración -->
+            <div id="settingsSection" class="section-content hidden">
+                <div class="controls-section mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-1">Configuración</h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Administra tu perfil y preferencias</p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6 md:p-8">
+                    <div class="space-y-8">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-1 flex items-center space-x-2">
+                                <i class="fas fa-user-circle text-primary"></i>
+                                <span>Información del Perfil</span>
+                            </h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Actualiza tu información personal</p>
+                            <div class="space-y-5 max-w-2xl">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nombre Completo</label>
+                                    <input type="text" class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all" id="profileName" placeholder="Tu nombre">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Correo Electrónico</label>
+                                    <input type="email" class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 cursor-not-allowed" id="profileEmail" readonly>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">El correo electrónico no se puede modificar</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal: Subir Documento -->
+    <div id="uploadModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4 fade-in">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-white">Subir Documento</h3>
+                    <button onclick="closeUploadModal()" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <form id="uploadForm" onsubmit="uploadDocument(event)">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Seleccionar archivo</label>
+                        <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-primary transition-colors duration-200">
+                            <input type="file" id="fileInput" class="hidden" onchange="handleFileSelect(event)" multiple>
+                            <label for="fileInput" class="cursor-pointer">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-2"></i>
+                                <p class="text-gray-600 dark:text-gray-400">Haz clic para seleccionar archivos</p>
+                                <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">o arrastra y suelta</p>
+                            </label>
+                        </div>
+                        <div id="selectedFiles" class="mt-4 space-y-2"></div>
+                    </div>
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" onclick="closeUploadModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-opacity-90 transition duration-200">
+                            <i class="fas fa-upload mr-2"></i>Subir
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Editar Documento -->
+    <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4 fade-in">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-white">Editar Documento</h3>
+                    <button onclick="closeEditModal()" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <form id="editForm" onsubmit="saveDocument(event)">
+                    <input type="hidden" id="editDocumentId">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nombre del documento</label>
+                        <input type="text" id="editDocumentName" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Descripción</label>
+                        <textarea id="editDocumentDescription" rows="3" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+                    </div>
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" onclick="closeEditModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-opacity-90 transition duration-200">
+                            <i class="fas fa-save mr-2"></i>Guardar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Compartir Documento -->
+    <div id="shareModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4 fade-in">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-white">Compartir Documento</h3>
+                    <button onclick="closeShareModal()" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <form id="shareForm" onsubmit="shareDocument(event)">
+                    <input type="hidden" id="shareDocumentId">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email del destinatario</label>
+                        <input type="email" id="shareEmail" placeholder="usuario@litoral.edu.co" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Permisos</label>
+                        <select id="sharePermission" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary">
+                            <option value="view">Solo lectura</option>
+                            <option value="edit">Editar</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" onclick="closeShareModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-opacity-90 transition duration-200">
+                            <i class="fas fa-share mr-2"></i>Compartir
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
+
